@@ -43,7 +43,7 @@ window.__ModuleLoader__.load({
       invalidAddress: '请填写代理地址，例如 127.0.0.1',
       unavailable: '网络代理设置不可用',
       hint: '回环地址（localhost、127.0.0.1、::1、0.0.0.0）始终直连，不会经过代理，因此本地服务与内网地址不受影响。',
-      systemHint: '读取操作系统当前的代理设置；Windows 下不支持 PAC 自动配置脚本。',
+      systemHint: '读取操作系统当前的代理设置，并同步给终端里的 git / curl / pnpm；关掉系统代理就是直连。Windows 下不支持 PAC 自动配置脚本。',
       directHint: '忽略所有代理设置，全部直接连接。',
       customHint: 'SOCKS5 只写入 ALL_PROXY 给子进程，HTTP(S) 代理另外写入 HTTP_PROXY / HTTPS_PROXY。',
     }
@@ -66,7 +66,7 @@ window.__ModuleLoader__.load({
       invalidAddress: 'Enter a proxy address, for example 127.0.0.1',
       unavailable: 'Network proxy settings are unavailable',
       hint: 'Loopback addresses (localhost, 127.0.0.1, ::1, 0.0.0.0) always connect directly, so local services and intranet hosts are never routed through the proxy.',
-      systemHint: 'Reads the operating system proxy. Windows PAC scripts are not supported.',
+      systemHint: 'Reads the operating system proxy and publishes it to git / curl / pnpm in the terminal; switching the OS proxy off means a direct connection. Windows PAC scripts are not supported.',
       directHint: 'Ignore every proxy setting and connect directly.',
       customHint: 'SOCKS5 publishes ALL_PROXY for child processes; HTTP(S) proxies also publish HTTP_PROXY / HTTPS_PROXY.',
     }

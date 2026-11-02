@@ -418,6 +418,10 @@ function readWindowsSystemProxy() {
   const output = execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], {
     encoding: 'utf8',
     windowsHide: true,
+    // This read runs on the synchronous proxy-switch path, so it must never be able
+    // to stall the host loop: a cold or wedged PowerShell is killed instead.
+    timeout: 2000,
+    killSignal: 'SIGKILL',
   })
   const config = JSON.parse(output)
   if (!config.ProxyEnable) {
@@ -475,11 +479,40 @@ function socksDispatcher(settings, noProxy) {
   })
 }
 
+/** How long one operating-system proxy read is reused. */
+const SYSTEM_PROXY_TTL_MS = 1000
+
+/** Last operating-system proxy read: `{ at, options }` or `{ at, error }`. */
+let systemProxySnapshot
+
+/**
+ * Read the operating system proxy, reusing a read younger than one second.
+ *
+ * The Windows read spawns a child process and runs on the synchronous proxy-switch
+ * path. Dispatcher and environment ask for the same snapshot, so one switch costs at
+ * most one child process, and a burst of settings events collapses into one read
+ * instead of stalling the host loop once per event.
+ */
+function readSystemProxyOnce() {
+  const now = Date.now()
+  if (systemProxySnapshot !== undefined && now - systemProxySnapshot.at < SYSTEM_PROXY_TTL_MS) {
+    return systemProxySnapshot
+  }
+  try {
+    systemProxySnapshot = { at: now, options: systemProxyOptions() }
+  } catch (error) {
+    systemProxySnapshot = { at: now, error }
+  }
+  return systemProxySnapshot
+}
+
 /** The dispatcher one settings value asks for. */
 function dispatcherFor(settings, noProxy) {
   if (settings.mode === 'direct') return new Agent()
   if (settings.mode === 'system') {
-    const options = systemProxyOptions()
+    const snapshot = readSystemProxyOnce()
+    if (snapshot.error !== undefined) throw snapshot.error
+    const options = snapshot.options
     if (!options.httpProxy && !options.httpsProxy) return new Agent()
     return new EnvHttpProxyAgent(options)
   }
@@ -506,12 +539,37 @@ function clearProxyEnvironment() {
   for (const name of PROXY_ENV_NAMES) Reflect.deleteProperty(process.env, name)
 }
 
+/** Write the proxy environment child processes will inherit. */
+function publishProxyEnvironment(httpProxy, httpsProxy, noProxy) {
+  clearProxyEnvironment()
+  if (httpProxy !== undefined) {
+    process.env.HTTP_PROXY = httpProxy
+    process.env.http_proxy = httpProxy
+  }
+  if (httpsProxy !== undefined) {
+    process.env.HTTPS_PROXY = httpsProxy
+    process.env.https_proxy = httpsProxy
+  }
+  const all = httpsProxy ?? httpProxy
+  if (all !== undefined) {
+    process.env.ALL_PROXY = all
+    process.env.all_proxy = all
+  }
+  const value = withLoopback(noProxy)
+  process.env.NO_PROXY = value
+  process.env.no_proxy = value
+}
+
 /**
  * Publish the settings to the environment child processes inherit.
  *
  * A SOCKS endpoint is published through `ALL_PROXY` only: `HTTP_PROXY` and
  * `HTTPS_PROXY` carrying a `socks5://` value would break every HTTP-only client
  * (curl reads SOCKS from `ALL_PROXY` and nothing else).
+ *
+ * `system` mode publishes what the operating system reports, so `git`, `curl` and
+ * `pnpm` follow the same proxy the harness itself uses — an OS proxy that is
+ * switched off restores the launch environment, which is a direct connection.
  */
 function applyProxyEnvironment(settings, noProxy) {
   if (settings.mode === 'direct') {
@@ -519,7 +577,19 @@ function applyProxyEnvironment(settings, noProxy) {
     return
   }
   if (settings.mode === 'system') {
-    restoreInheritedProxyEnvironment()
+    const snapshot = readSystemProxyOnce()
+    const options = snapshot.options
+    if (snapshot.error !== undefined || options === undefined || (!options.httpProxy && !options.httpsProxy)) {
+      // A PAC script, a half-configured OS proxy, or an OS proxy that is switched
+      // off: leave the launch environment alone, which is a direct connection.
+      restoreInheritedProxyEnvironment()
+      return
+    }
+    publishProxyEnvironment(
+      options.httpProxy,
+      options.httpsProxy,
+      options.noProxy === undefined || options.noProxy === '' ? noProxy : options.noProxy,
+    )
     return
   }
   if (settings.protocol === 'socks5' || settings.protocol === 'socks5h') {

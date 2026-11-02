@@ -43,12 +43,14 @@ DeepSeek Harness 的网络代理设置插件，支持 **SOCKS5 / SOCKS5H / HTTP 
 - **回环直连**：`localhost`、`127.0.0.0/8`、`::1`、`0.0.0.0` 永远直连，
   避免把 Harness 自己的本地服务（例如本地模型 `http://127.0.0.1:11434`）送进代理造成环路。
 - **NO_PROXY**：启动时环境变量里已有的 `NO_PROXY`/`no_proxy` 仍然生效。
-- **环境变量**：自定义模式下同步给子进程（bash/pwsh 里的 `curl`、`git` 等）——
+- **环境变量**：两种代理模式都会同步给子进程（bash/pwsh 里的 `curl`、`git`、`pnpm` 等）——
   SOCKS5 只写 `ALL_PROXY`（`HTTP_PROXY` 带 socks 协议会让只支持 HTTP 代理的客户端出错），
   HTTP(S) 代理则写 `HTTP_PROXY`/`HTTPS_PROXY`/`ALL_PROXY`；
   `NO_PROXY` 一定会补上回环地址（保留原有条目），免得子进程访问本地服务时被塞进代理。
 - **跟随系统**：Windows 下读取注册表 `Internet Settings`（支持 `http=…;https=…` 与 `ProxyOverride`），
-  其他平台读启动环境的 `HTTP(S)_PROXY`。Windows PAC 脚本不支持，会提示改用手动模式。
+  其他平台读启动环境的 `HTTP(S)_PROXY`。读到的代理会同时装进 dispatcher **和子进程环境变量**，
+  所以 `git ls-remote github.com`、`pnpm add github:…` 这类子进程也会跟着系统代理走；
+  系统代理被关掉时还原成启动环境（等于直连）。Windows PAC 脚本不支持，会提示改用手动模式。
 
 ## 已知限制
 
