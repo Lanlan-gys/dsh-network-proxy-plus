@@ -69,6 +69,10 @@ function withLoopback(noProxy) {
 // Every field is `volatile`, which is what makes this plugin's row editable from
 // the running settings UI: a volatile-only edit is committed into the live config
 // references instead of remounting the plugin, so the switch is instant.
+//
+// The default mode is `system` on purpose. A freshly installed proxy plugin must
+// never take over a stranger's network: if it defaulted to `custom` and the machine
+// has no proxy on 127.0.0.1:10809, the harness would lose the network on first boot.
 export const Config = z.object({
   mode: z
     .union([
@@ -76,7 +80,7 @@ export const Config = z.object({
       z.const('custom').description('Use the proxy configured below'),
       z.const('direct').description('Ignore every proxy and connect directly'),
     ])
-    .default('custom')
+    .default('system')
     .volatile(),
   protocol: z
     .union([
