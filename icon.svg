@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Network proxy">
+  <defs>
+    <linearGradient id="dshNppShield" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4c8dff"/>
+      <stop offset="1" stop-color="#1f5fd0"/>
+    </linearGradient>
+  </defs>
+  <path d="M32 4 8 12v20c0 14 10 24 24 28 14-4 24-14 24-28V12L32 4Z" fill="url(#dshNppShield)"/>
+  <path d="M32 9.5 13 16v16c0 11.4 7.8 19.9 19 23.5C43.2 51.9 51 43.4 51 32V16L32 9.5Z" fill="none" stroke="#ffffff" stroke-opacity="0.35" stroke-width="2"/>
+  <circle cx="32" cy="27" r="6.5" fill="#ffffff"/>
+  <path d="M32 33.5v10M32 33.5 24 40M32 33.5 40 40" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "网络代理 Plus",
+    "description": "配置 DeepSeek Harness 访问网络的方式：跟随系统、自定义 SOCKS5 / HTTP 代理（例如 127.0.0.1:10809）或直连。"
+  }
+}

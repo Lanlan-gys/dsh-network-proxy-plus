@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Network Proxy Plus",
+    "description": "Choose how DeepSeek Harness reaches the network: follow the system, use a custom SOCKS5 or HTTP proxy such as 127.0.0.1:10809, or connect directly."
+  }
+}
